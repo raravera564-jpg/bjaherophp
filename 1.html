@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BjaheroPH - Travel & Immigration Planner</title>
+    <!-- PWA Manifest & Theme Tag -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d9488">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        teal: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        },
+                        amber: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        cyan: {
+                            50: '#ecfeff',
+                            100: '#cffaff',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                        }
+                    },
+                    animation: {
+                        'spin-slow': 'spin 40s linear infinite',
+                        'orbit-plane': 'orbit 18s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        orbit: {
+                            '0%': { transform: 'rotate(0deg) translateX(180px) rotate(0deg)' },
+                            '100%': { transform: 'rotate(360deg) translateX(180px) rotate(-360deg)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-12px)' }
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+                            '50%': { opacity: '0.7', transform: 'scale(1.05)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #041f20;
+            overflow-x: hidden;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animated Globe & Orbit Canvas Elements */
+        .travel-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 30%, #0d4a4d 0%, #062325 60%, #021213 100%);
+        }
+
+        .globe-container {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 500px;
+            opacity: 0.35;
+        }
+
+        @media (max-width: 640px) {
+            .globe-container {
+                width: 320px;
+                height: 320px;
+            }
+        }
+
+        .globe-sphere {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px dashed rgba(20, 184, 166, 0.4);
+            box-shadow: 0 0 60px rgba(13, 148, 136, 0.3), inset 0 0 40px rgba(20, 184, 166, 0.2);
+            position: relative;
+        }
+
+        /* Orbiting Airplane System */
+        .orbit-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120%;
+            height: 120%;
+            margin-top: -60%;
+            margin-left: -60%;
+            border: 1.5px stroke rgba(245, 158, 11, 0.3);
+            border-radius: 50%;
+            transform: rotate(-25deg) rotateX(65deg);
+        }
+
+        .plane-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            margin-top: -50%;
+            margin-left: -50%;
+            animation: planeOrbit 16s linear infinite;
+        }
+
+        @keyframes planeOrbit {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .orbiting-airplane {
+            position: absolute;
+            top: 0%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            color: #fbbf24;
+            font-size: 1.75rem;
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+        }
+
+        /* Flight Path Dotted Trail */
+        .flight-trail {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px dashed rgba(245, 158, 11, 0.4);
+        }
+
+        /* Backdrop Glassmorphism Card Style */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        /* Landmark Silhouettes at bottom */
+        .landmarks-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 90px;
+            z-index: 0;
+            opacity: 0.12;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path fill="%23ffffff" d="M0,120 L0,90 L30,90 L30,60 L40,60 L40,90 L70,90 L70,30 L80,10 L90,30 L90,90 L130,90 L150,40 L170,90 L210,90 L210,70 L230,70 L230,90 L280,90 L290,20 L300,90 L340,90 L360,50 L380,90 L430,90 L450,15 L470,90 L520,90 L550,45 L580,90 L630,90 L640,30 L650,90 L700,90 L720,40 L740,90 L790,90 L810,25 L830,90 L890,90 L900,10 L910,90 L960,90 L980,50 L1000,90 L1050,90 L1070,35 L1090,90 L1200,90 L1200,120 Z"/></svg>');
+            background-repeat: repeat-x;
+            background-size: contain;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 bg-teal-950 min-h-screen flex flex-col antialiased relative">
+
+    <!-- TRAVEL GLOBE & AIRPLANE ANIMATED BACKGROUND -->
+    <div class="travel-bg">
+        <!-- World Landmark Skyline Silhouette -->
+        <div class="landmarks-banner"></div>
+
+        <!-- Glowing Globe Axis -->
+        <div class="globe-container">
+            <div class="globe-sphere animate-spin-slow flex items-center justify-center">
+                <i class="fa-solid fa-earth-americas text-teal-400/20 text-8xl sm:text-[180px]"></i>
+            </div>
+            
+            <!-- Orbiting Flight Arc & Airplane -->
+            <div class="orbit-ring">
+                <div class="flight-trail"></div>
+                <div class="plane-wrapper">
+                    <i class="fa-solid fa-plane-up orbiting-airplane"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEADER NAVBAR -->
+    <header class="bg-gradient-to-r from-teal-900/90 via-teal-800/90 to-cyan-900/90 backdrop-blur-md text-white shadow-xl sticky top-0 z-50 border-b border-teal-500/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-500 text-teal-950 p-2.5 rounded-xl shadow-lg font-bold text-xl flex items-center justify-center animate-pulse-glow">
+                    <i class="fa-solid fa-plane-departure"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-1.5">
+                        Bjahero<span class="text-amber-400">PH</span>
+                    </h1>
+                    <p class="text-xs text-teal-100/80 font-medium hidden sm:block">Global Travel & Bureau of Immigration Assistant for Filipinos</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <!-- GCASH / CREATOR TIP MONETIZATION BUTTON -->
+                <button onclick="toggleGcashModal(true)" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md border border-cyan-300/40 animate-pulse">
+                    <i class="fa-solid fa-mug-hot text-amber-300"></i>
+                    <span>Tip / GCash</span>
+                </button>
+
+                <span id="currentDateBadge" class="hidden md:inline-block bg-teal-900/60 backdrop-blur border border-teal-500/40 text-xs px-3.5 py-1.5 rounded-full text-teal-100 font-medium">
+                    <i class="fa-regular fa-calendar-check mr-1.5 text-amber-400"></i> BI Travel Ready
+                </span>
+                <button onclick="resetAllData()" class="bg-teal-800/80 hover:bg-teal-700/80 border border-teal-400/30 text-white text-xs px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-rotate-right"></i> <span class="hidden sm:inline">Reset All</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
+
+        <!-- Destination Selector Header Bar -->
+        <section class="glass-panel rounded-2xl p-4 sm:p-6 shadow-xl border border-white/40">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                
+                <div class="md:col-span-4">
+                    <label for="continentSelect" class="block text-xs font-extrabold text-teal-900 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-earth-americas text-teal-600 mr-1"></i> 1. Select Continent
+                    </label>
+                    <select id="continentSelect" onchange="handleContinentChange(this.value)" class="w-full bg-slate-50/90 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 block p-3 font-semibold transition-all shadow-sm">
+                        <option value="ALL">🌐 All Continents (Global Overview)</option>
+                        <option value="Asia">🌏 Asia</option>
+                        <option value="Europe">🌍 Europe</option>
+                        <option value="North America">🌎 North America</option>
+                        <option value="South America">🌎 South America</option>
+                        <option value="Africa">🌍 Africa</option>
+                        <option value="Oceania">🌏 Oceania</option>
+                        <option value="Antarctica">❄️ Antarctica</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-5">
+                    <label for="destinationSelect" class="block text-xs font-extrabold text-teal-900 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-location-dot text-amber-500 mr-1"></i> 2. Choose Destination / Country
+                    </label>
+                    <select id="destinationSelect" onchange="selectDestination(this.value)" class="w-full bg-amber-50/90 border-2 border-amber-400 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 block p-3 font-bold transition-all shadow-sm">
+                        <option value="" disabled selected>-- Choose a Destination --</option>
+                        <!-- Dynamic options loaded via JS -->
+                    </select>
+                </div>
+
+                <div class="md:col-span-3 flex flex-col justify-end">
+                    <div class="bg-teal-900/10 border border-teal-600/30 rounded-xl p-2.5 flex items-center justify-between">
+                        <div class="text-xs">
+                            <span class="text-slate-500 block text-[10px] uppercase font-bold">Selected:</span>
+                            <span id="selectedDestinationStatus" class="font-bold text-teal-900 truncate max-w-[130px] block">No Selection</span>
+                        </div>
+                        <span id="visaTagHeader" class="hidden text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                            -
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Dynamic Destination Banner / Prompt -->
+        <div id="destinationBanner" class="hidden bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-teal-500/30">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="bannerRegion" class="bg-amber-500 text-teal-950 font-black text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wide">Continent</span>
+                        <span id="bannerVisa" class="bg-teal-700/80 text-teal-100 text-xs px-2.5 py-0.5 rounded-full font-medium border border-teal-400/30">Visa Rules</span>
+                    </div>
+                    <h2 id="bannerTitle" class="text-2xl sm:text-3xl font-black text-white">Country Name</h2>
+                    <p id="bannerDescription" class="text-slate-200 text-sm mt-1 max-w-2xl">Overview of country...</p>
+                </div>
+                <div class="flex flex-row md:flex-col items-start md:items-end justify-between bg-white/10 backdrop-blur p-3.5 rounded-xl border border-white/10 min-w-[200px]">
+                    <span class="text-xs text-slate-300">Fx Exchange Rate</span>
+                    <span id="bannerCurrency" class="text-base font-extrabold text-amber-400">1 USD ≈ 58.50 PHP</span>
+                    <span id="bannerCapital" class="text-xs text-teal-200 mt-1">Capital: City</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unselected Welcome Placeholder -->
+        <div id="unselectedPlaceholder" class="glass-panel border-2 border-dashed border-teal-300/60 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+            <div class="w-16 h-16 bg-amber-500/20 text-amber-600 rounded-full flex items-center justify-center mx-auto text-3xl animate-bounce">
+                <i class="fa-solid fa-compass"></i>
+            </div>
+            <h3 class="text-xl font-black text-teal-950">Where in the world are you flying next?</h3>
+            <p class="text-sm text-slate-600 max-w-lg mx-auto">
+                Select a continent and destination above to view specialized **Bureau of Immigration (BI)** departure document checklists, estimated travel budget in PHP, and day-by-day itineraries.
+            </p>
+        </div>
+
+        <!-- App Functional Navigation Tabs -->
+        <div id="appTabsContainer" class="hidden">
+            <div class="flex overflow-x-auto gap-2 border-b border-teal-800/40 pb-2 hide-scrollbar">
+                <button onclick="switchTab('biChecklist')" id="tabBtn-biChecklist" class="tab-btn bg-teal-600 text-white font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-clipboard-check"></i> BI Checklist & COI
+                </button>
+                <button onclick="switchTab('budgetPlanner')" id="tabBtn-budgetPlanner" class="tab-btn glass-panel hover:bg-white text-slate-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap border border-slate-200">
+                    <i class="fa-solid fa-calculator"></i> Budget & Travel Tax
+                </button>
+                <button onclick="switchTab('itinerary')" id="tabBtn-itinerary" class="tab-btn glass-panel hover:bg-white text-slate-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap border border-slate-200">
+                    <i class="fa-solid fa-route"></i> Day-by-Day Itinerary
+                </button>
+                <button onclick="switchTab('travelTips')" id="tabBtn-travelTips" class="tab-btn glass-panel hover:bg-white text-slate-700 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-2 whitespace-nowrap border border-slate-200">
+                    <i class="fa-solid fa-lightbulb"></i> BI Inspection Advice
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT 1: BI IMMIGRATION CHECKLIST -->
+        <section id="tabContent-biChecklist" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-xl border border-white/50">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-teal-600"></i> Bureau of Immigration (BI) Departure Requirements
+                        </h3>
+                        <p class="text-xs text-slate-50">Based on updated BI Guidelines for Filipino Passengers departing PH airports.</p>
+                    </div>
+                    
+                    <div>
+                        <label for="travelerCategory" class="block text-xs font-semibold text-slate-700 mb-1">Select Traveler Profile:</label>
+                        <select id="travelerCategory" onchange="renderChecklist()" class="bg-slate-100 border border-slate-300 text-xs font-bold text-slate-800 rounded-xl p-2.5 focus:ring-teal-500 focus:border-teal-500 shadow-sm">
+                            <option value="tourist">✈️ Private Employee / Self-Funded Tourist</option>
+                            <option value="government">🏛️ Government Worker (Regular / JO / COS)</option>
+                            <option value="sponsored">🤝 Sponsored Tourist (Relatives / Non-Rel)</option>
+                            <option value="ofw">💼 OFW / Overseas Employment</option>
+                            <option value="student">🎓 International Student</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Alert for High-Risk Offloading Warning -->
+                <div class="bg-amber-50/90 border-l-4 border-amber-500 p-4 rounded-r-xl mb-6 text-xs text-amber-950 space-y-1 shadow-sm">
+                    <p class="font-bold flex items-center gap-1.5 text-amber-900">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> BI Primary vs Secondary Inspection Advisory:
+                    </p>
+                    <p>Primary inspection requires basic documents (Passport, Ticket, eTravel). If financial capacity or employment status is questioned, secondary inspection documents will be requested.</p>
+                </div>
+
+                <!-- Requirements Checklist Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="checklistContainer">
+                    <!-- Dynamic checklists rendered by JS -->
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+                    <span id="checklistProgressText" class="font-bold text-teal-800">Progress: 0% Completed</span>
+                    <span><i class="fa-solid fa-folder-open text-amber-500 mr-1"></i> Carry printed hard copies in a clear folder.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 2: BUDGET & TRAVEL TAX CALCULATOR -->
+        <section id="tabContent-budgetPlanner" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Input Panel -->
+                <div class="lg:col-span-7 glass-panel rounded-2xl p-6 shadow-xl border border-white/50 space-y-5">
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-200 pb-3">
+                        <i class="fa-solid fa-coins text-amber-500"></i> Travel Budget & Expenses Calculator
+                    </h3>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Trip Duration (Days)</label>
+                            <input type="number" id="inputDays" min="1" max="90" value="5" onchange="calculateBudget()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-semibold text-slate-800 focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Travel Style</label>
+                            <select id="inputStyle" onchange="calculateBudget()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm font-semibold text-slate-800 focus:ring-teal-500 focus:border-teal-500">
+                                <option value="budget">🎒 Budget / Backpacker</option>
+                                <option value="moderate" selected>🧳 Mid-Range / Comfortable</option>
+                                <option value="luxury">✨ Luxury / Premium</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Estimated Cost Breakdown (PHP ₱)</h4>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700"><i class="fa-solid fa-plane text-teal-600 mr-1"></i> Roundtrip Flight (PHP)</span>
+                                    <span id="valFlightDisplay" class="text-teal-800 font-bold">₱15,000</span>
+                                </div>
+                                <input type="range" id="inputFlight" min="2000" max="150000" step="1000" value="15000" oninput="calculateBudget()" class="w-full accent-teal-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700"><i class="fa-solid fa-hotel text-teal-600 mr-1"></i> Accommodation per Night (PHP)</span>
+                                    <span id="valHotelDisplay" class="text-teal-800 font-bold">₱3,500</span>
+                                </div>
+                                <input type="range" id="inputHotel" min="500" max="35000" step="500" value="3500" oninput="calculateBudget()" class="w-full accent-teal-600">
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-semibold mb-1">
+                                    <span class="text-slate-700"><i class="fa-solid fa-utensils text-teal-600 mr-1"></i> Daily Food & Pocket Money (PHP)</span>
+                                    <span id="valDailyDisplay" class="text-teal-800 font-bold">₱2,500</span>
+                                </div>
+                                <input type="range" id="inputDaily" min="500" max="25000" step="250" value="2500" oninput="calculateBudget()" class="w-full accent-teal-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PH Travel Tax Options -->
+                    <div class="bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-teal-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-receipt text-teal-600"></i> PH Tourism Travel Tax
+                            </label>
+                            <select id="inputTravelTax" onchange="calculateBudget()" class="bg-white border border-teal-300 text-xs font-bold text-teal-900 rounded-lg p-1.5">
+                                <option value="1620">Economy Class (₱1,620)</option>
+                                <option value="2700">First / Business Class (₱2,700)</option>
+                                <option value="810">Reduced Rate (₱810)</option>
+                                <option value="0">Exempted / Pre-paid (₱0)</option>
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-teal-700">
+                            Standard Philippine Travel Tax (₱1,620) is mandated for departing PH residents.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right Summary Panel -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div class="bg-gradient-to-br from-teal-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl space-y-4 border border-teal-500/30">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-teal-300">Total Estimated Trip Cost</h4>
+                        
+                        <div>
+                            <div class="text-3xl sm:text-4xl font-black text-amber-400" id="totalCostPHP">
+                                ₱34,120
+                            </div>
+                            <span class="text-xs text-slate-300">All-in budget estimate in Philippine Pesos</span>
+                        </div>
+
+                        <div class="border-t border-slate-700 pt-4 space-y-2 text-xs">
+                            <div class="flex justify-between">
+                                <span class="text-slate-300">Flights:</span>
+                                <span id="summaryFlight" class="font-bold">₱15,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-300">Accommodation Total:</span>
+                                <span id="summaryHotel" class="font-bold">₱14,000</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-300">Food & Daily Total:</span>
+                                <span id="summaryDaily" class="font-bold">₱12,500</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-300">PH Travel Tax:</span>
+                                <span id="summaryTax" class="font-bold">₱1,620</span>
+                            </div>
+                        </div>
+
+                        <!-- Foreign Currency Equivalent -->
+                        <div class="bg-white/10 rounded-xl p-3 text-xs flex justify-between items-center">
+                            <span class="text-slate-300">Foreign Currency Value:</span>
+                            <span id="foreignCurrencyConverted" class="font-bold text-amber-300 text-sm">--</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl p-5 border border-white/50 shadow-md text-xs space-y-2">
+                        <span class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-piggy-bank text-amber-500"></i> Recommended Bank Balance for BI
+                        </span>
+                        <p class="text-slate-600">
+                            Immigration officers evaluate if your savings match your length of stay. For a <span id="daysCountDisplay" class="font-bold">5</span>-day trip, we recommend showing at least <span id="recommendedBankPHP" class="font-bold text-teal-700">₱45,000 - ₱60,000</span> in bank savings or active mobile banking apps.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 3: DAY-BY-DAY ITINERARY & MONETIZED KLOOK DEALS -->
+        <section id="tabContent-itinerary" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-xl border border-white/50 space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-teal-600"></i> Recommended Itinerary & Transit Options
+                        </h3>
+                        <p class="text-xs text-slate-500" id="itinerarySubheader">Curated highlights for your trip.</p>
+                    </div>
+                </div>
+
+                <!-- Itinerary Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="itineraryDaysContainer">
+                    <!-- Dynamic itinerary days loaded by JS -->
+                </div>
+
+                <!-- KLOOK AFFILIATE EARNING DEALS BOX (MONETIZATION ADD-ON) -->
+                <div class="bg-gradient-to-r from-amber-500/10 via-amber-400/20 to-orange-500/10 border-2 border-amber-400/60 rounded-2xl p-5 space-y-4 shadow-lg">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-500 text-slate-950 font-black text-xs px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1">
+                                <i class="fa-solid fa-tags"></i> Klook Exclusives
+                            </span>
+                            <h4 class="font-black text-slate-900 text-sm sm:text-base">Book Recommended Activities & Transport</h4>
+                        </div>
+                        <span class="text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300">
+                            ⚡ Best Price Guarantee for Filipinos
+                        </span>
+                    </div>
+
+                    <!-- Dynamic Affiliate Link Cards -->
+                    <div id="klookAffiliateGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        <!-- Rendered by JS based on current destination -->
+                    </div>
+                </div>
+
+                <!-- Public Transit & Local Tips -->
+                <div class="bg-teal-50/80 border border-teal-200 rounded-xl p-4 space-y-2 text-xs">
+                    <h4 class="font-bold text-teal-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bus text-teal-600"></i> Recommended Transit & Local Tips
+                    </h4>
+                    <p id="transitInfoText" class="text-teal-800">
+                        Select a destination to view transit cards and local commute tips.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB CONTENT 4: BI INSPECTION ADVICE & TIPS -->
+        <section id="tabContent-travelTips" class="tab-content hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 shadow-xl border border-white/50 space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-teal-600"></i> How to Pass Bureau of Immigration (BI) Inspection
+                    </h3>
+                    <p class="text-xs text-slate-500">Essential advice for smooth primary & secondary inspection at NAIA, MCIA, or CRK checkpoints.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">1</div>
+                        <h4 class="font-bold text-sm text-slate-800">Attire & Confidence</h4>
+                        <p class="text-xs text-slate-600">Wear neat, smart-casual attire. Answer questions directly without elaborating unnecessary stories unless asked.</p>
+                    </div>
+
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">2</div>
+                        <h4 class="font-bold text-sm text-slate-800">Printed Document Folder</h4>
+                        <p class="text-xs text-slate-600">Keep return flight tickets, hotel vouchers, and COE in a dedicated clear folder ready for instant presentation.</p>
+                    </div>
+
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">3</div>
+                        <h4 class="font-bold text-sm text-slate-800">Govt Workers & JO/COS</h4>
+                        <p class="text-xs text-slate-600">Always secure a formal **Travel Authority (TA)** or formal **Leave Clearance / Agency Head Letter** even for personal vacations.</p>
+                    </div>
+
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">4</div>
+                        <h4 class="font-bold text-sm text-slate-800">Financial Verification</h4>
+                        <p class="text-xs text-slate-600">Be ready to show active mobile banking apps, bank certificates, or company ID proving your active income in the PH.</p>
+                    </div>
+
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">5</div>
+                        <h4 class="font-bold text-sm text-slate-800">eTravel Registration</h4>
+                        <p class="text-xs text-slate-600">Complete official registration at etravel.gov.ph within 72 hours prior to scheduled departure time.</p>
+                    </div>
+
+                    <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">6</div>
+                        <h4 class="font-bold text-sm text-slate-800">Sponsored Trips</h4>
+                        <p class="text-xs text-slate-600">If sponsored by 1st/2nd degree relative, bring PSA birth/marriage certificates. For non-relatives, formal notarized AOSG is mandatory.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- GCASH / CREATOR SUPPORT MODAL -->
+    <div id="gcashModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-teal-950/80 backdrop-blur-md">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative border border-slate-100 space-y-4">
+            <button onclick="toggleGcashModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl font-bold">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                    <i class="fa-solid fa-hand-holding-heart"></i>
+                </div>
+                <h3 class="text-lg font-black text-slate-900">Support BjaheroPH</h3>
+                <p class="text-xs text-slate-600">If this tool helped you prepare for your flight & pass BI inspection, consider sending a small tip to keep BjaheroPH free!</p>
+            </div>
+
+            <!-- GCash Box -->
+            <div class="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl p-4 text-white text-center space-y-2 shadow-md">
+                <span class="text-[11px] font-extrabold uppercase tracking-widest text-cyan-200">Official GCash Account</span>
+                <div class="text-2xl font-black tracking-wider bg-white/10 rounded-lg py-1.5 flex items-center justify-center gap-2">
+                    <span id="gcashNumText">09777161505</span>
+                    <button onclick="copyGcashNumber()" title="Copy Number" class="text-amber-300 hover:text-white text-sm bg-black/20 p-1.5 rounded">
+                        <i class="fa-solid fa-copy"></i>
+                    </button>
+                </div>
+                <p class="text-[11px] text-blue-100 font-medium">Account Name: <strong class="text-white">BJAHERO PH / TRAVEL TEAM</strong></p>
+            </div>
+
+            <!-- QR Code Placeholder -->
+            <div class="border-2 border-dashed border-slate-200 rounded-xl p-3 text-center space-y-1">
+                <div class="bg-slate-100 rounded-lg py-6 flex flex-col items-center justify-center gap-1">
+                    <i class="fa-solid fa-qrcode text-4xl text-slate-400"></i>
+                    <span class="text-xs text-slate-500 font-bold">Scan with GCash / Maya App</span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="toggleGcashModal(false)" class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-all">
+                    Close Window
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-teal-950/90 text-slate-400 text-xs py-6 mt-12 border-t border-teal-800/50 relative z-10">
+        <div class="max-w-7xl mx-auto px-4 text-center space-y-2">
+            <p class="font-bold text-slate-300">BjaheroPH — Global Travel & BI Assistant for Filipinos</p>
+            <p class="text-slate-500 max-w-2xl mx-auto">Disclaimer: Guidance is provided for trip planning based on Philippine BI guidelines. Final departure clearances rest with airport immigration officers.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APPLICATION CORE -->
+    <script>
+        // CONFIGURATION: Replace with your registered affiliate ID or tracking parameter
+        const KLOOK_AFFILIATE_PARAM = "138125"; // e.g. ?aid=12345
+
+        // Comprehensive Dataset across All 7 Continents
+        const GLOBAL_DESTINATIONS = [
+            // ASIA
+            { id: 'JPN', name: 'Japan (Tokyo / Osaka)', continent: 'Asia', visa: 'Visa Required (Tourist)', fxRate: 2.65, fxCode: 'JPY', fxSymbol: '¥', flightEst: 18000, hotelEst: 4000, dailyEst: 3500, desc: 'Land of rising sun, cherry blossoms, and bullet trains.', capital: 'Tokyo', transit: 'Suica/Pasmo IC Card for Metro, JR Pass for intercity trains.', day1: 'Shibuya Crossing & Senso-ji Temple', day2: 'Mt. Fuji Day Tour or Universal Studios', day3: 'Akihabara Shopping & Ginza' },
+            { id: 'SGP', name: 'Singapore', continent: 'Asia', visa: 'Visa Free (30 Days)', fxRate: 0.023, fxCode: 'SGD', fxSymbol: 'S$', flightEst: 12000, hotelEst: 4500, dailyEst: 3000, desc: 'Modern garden city with world-class airports and hawker food.', capital: 'Singapore', transit: 'EZ-Link card for MRT trains and buses.', day1: 'Jewel Changi & Marina Bay Sands Light Show', day2: 'Gardens by the Bay & Sentosa Island', day3: 'Chinatown & Lau Pa Sat Hawker Feast' },
+            { id: 'KOR', name: 'South Korea (Seoul / Busan)', continent: 'Asia', visa: 'Visa Required (C-3-9)', fxRate: 23.5, fxCode: 'KRW', fxSymbol: '₩', flightEst: 15000, hotelEst: 3500, dailyEst: 3000, desc: 'K-pop culture, historic palaces, and vibrant street fashion.', capital: 'Seoul', transit: 'T-Money card works seamlessly across Subway & Buses.', day1: 'Gyeongbokgung Palace & Bukchon Hanok', day2: 'Nami Island & Myeongdong Shopping', day3: 'Hongdae Youth District & Han River Park' },
+            { id: 'THA', name: 'Thailand (Bangkok / Phuket)', continent: 'Asia', visa: 'Visa Free (30 Days)', fxRate: 0.62, fxCode: 'THB', fxSymbol: '฿', flightEst: 9500, hotelEst: 2200, dailyEst: 1800, desc: 'Golden temples, night markets, and delicious street food.', capital: 'Bangkok', transit: 'BTS Skytrain, MRT, Grab, and Tuk-Tuks.', day1: 'Grand Palace & Wat Arun', day2: 'Chatuchak Weekend Market & River Cruise', day3: 'Ayutthaya Temple Ruins Day Trip' },
+            { id: 'HKG', name: 'Hong Kong SAR', continent: 'Asia', visa: 'Visa Free (14 Days)', fxRate: 0.13, fxCode: 'HKD', fxSymbol: 'HK$', flightEst: 11000, hotelEst: 4200, dailyEst: 2800, desc: 'Harbor views, dim sum, and Hong Kong Disneyland.', capital: 'Hong Kong', transit: 'Octopus Card for MTR trains and ferries.', day1: 'Victoria Peak & Star Ferry Ride', day2: 'Hong Kong Disneyland', day3: 'Tsim Sha Tsui Promenade & Mong Kok Markets' },
+            { id: 'TWN', name: 'Taiwan (Taipei)', continent: 'Asia', visa: 'Visa Free (14 Days)', fxRate: 0.55, fxCode: 'TWD', fxSymbol: 'NT$', flightEst: 9000, hotelEst: 2500, dailyEst: 2000, desc: 'Famous night markets, bubble tea, and scenic mountain towns.', capital: 'Taipei', transit: 'EasyCard for Taipei Metro (MRT) and YouBike.', day1: 'Taipei 101 & Shilin Night Market', day2: 'Jiufen Old Street & Yehliu Geopark', day3: 'Ximending Youth Shopping & Chiang Kai-shek Memorial' },
+            { id: 'VNM', name: 'Vietnam (Hanoi / Da Nang)', continent: 'Asia', visa: 'Visa Free (21 Days)', fxRate: 440.0, fxCode: 'VND', fxSymbol: '₫', flightEst: 9000, hotelEst: 1800, dailyEst: 1500, desc: 'Coffee culture, Ha Long Bay limestone karsts, and ancient streets.', capital: 'Hanoi', transit: 'Grab App for motorbikes and taxis.', day1: 'Hanoi Old Quarter & Hoan Kiem Lake', day2: 'Ha Long Bay Cruise', day3: 'Train Street & Egg Coffee Tasting' },
+            { id: 'MYS', name: 'Malaysia (Kuala Lumpur)', continent: 'Asia', visa: 'Visa Free (30 Days)', fxRate: 0.076, fxCode: 'MYR', fxSymbol: 'RM', flightEst: 8500, hotelEst: 2000, dailyEst: 1600, desc: 'Iconic Petronas Towers, multicultural heritage, and Batu Caves.', capital: 'Kuala Lumpur', transit: 'RapidKL LRT and Grab car apps.', day1: 'Petronas Twin Towers & KLCC Park', day2: 'Batu Caves & Genting Highlands', day3: 'Bukit Bintang Street Food' },
+            { id: 'IDN', name: 'Indonesia (Bali / Jakarta)', continent: 'Asia', visa: 'Visa Free (30 Days)', fxRate: 275.0, fxCode: 'IDR', fxSymbol: 'Rp', flightEst: 12000, hotelEst: 2200, dailyEst: 1800, desc: 'Tropical beaches, ancient temples, and island nightlife.', capital: 'Jakarta', transit: 'Gojek or Grab scooter rentals.', day1: 'Ubud Monkey Forest & Rice Terraces', day2: 'Uluwatu Sunset Temple & Kecak Dance', day3: 'Canggu Beach Club Relaxing' },
+            { id: 'ARE', name: 'United Arab Emirates (Dubai)', continent: 'Asia', visa: 'Visa Required (eVisa)', fxRate: 0.063, fxCode: 'AED', fxSymbol: 'AED', flightEst: 32000, hotelEst: 5500, dailyEst: 4000, desc: 'Ultramodern architecture, luxury shopping, and desert safaris.', capital: 'Abu Dhabi', transit: 'Dubai Metro and Careem Taxi app.', day1: 'Burj Khalifa & Dubai Mall Fountains', day2: 'Desert Safari with BBQ Dinner', day3: 'Dubai Frame & Old Gold Souk' },
+
+            // EUROPE
+            { id: 'FRA', name: 'France (Paris)', continent: 'Europe', visa: 'Schengen Visa Required', fxRate: 0.016, fxCode: 'EUR', fxSymbol: '€', flightEst: 45000, hotelEst: 7500, dailyEst: 5000, desc: 'Eiffel Tower, haute couture, and world famous museums.', capital: 'Paris', transit: 'Navigo pass for Paris Metro & RER trains.', day1: 'Eiffel Tower & Seine River Cruise', day2: 'Louvre Museum & Champs-Élysées', day3: 'Palace of Versailles Day Trip' },
+            { id: 'ITA', name: 'Italy (Rome / Venice)', continent: 'Europe', visa: 'Schengen Visa Required', fxRate: 0.016, fxCode: 'EUR', fxSymbol: '€', flightEst: 46000, hotelEst: 7000, dailyEst: 4800, desc: 'Colosseum ruins, authentic pasta, gelato, and art.', capital: 'Rome', transit: 'Trenitalia trains and Metro system.', day1: 'Colosseum & Roman Forum', day2: 'Vatican City & St. Peter Basilica', day3: 'Trevi Fountain & Spanish Steps' },
+            { id: 'ESP', name: 'Spain (Madrid / Barcelona)', continent: 'Europe', visa: 'Schengen Visa Required', fxRate: 0.016, fxCode: 'EUR', fxSymbol: '€', flightEst: 44000, hotelEst: 6500, dailyEst: 4500, desc: 'Flamenco dance, Sagrada Familia, and tapas dining.', capital: 'Madrid', transit: 'Renfe trains and Metro Madrid.', day1: 'Sagrada Familia & Park Güell', day2: 'Gothic Quarter Walking Tour', day3: 'Tapas Crawl in La Rambla' },
+            { id: 'GBR', name: 'United Kingdom (London)', continent: 'Europe', visa: 'UK Standard Visitor Visa', fxRate: 0.013, fxCode: 'GBP', fxSymbol: '£', flightEst: 50000, hotelEst: 8500, dailyEst: 5500, desc: 'Big Ben, royal palaces, West End shows, and red buses.', capital: 'London', transit: 'Oyster Card or Contactless on Underground Tube.', day1: 'Big Ben, London Eye & Westminster', day2: 'British Museum & Buckingham Palace', day3: 'Tower of London & Tower Bridge' },
+
+            // NORTH AMERICA
+            { id: 'USA', name: 'United States (Los Angeles / NYC)', continent: 'North America', visa: 'US B1/B2 Visitor Visa Required', fxRate: 0.017, fxCode: 'USD', fxSymbol: '$', flightEst: 55000, hotelEst: 9000, dailyEst: 6000, desc: 'Hollywood, Times Square, and national parks.', capital: 'Washington, D.C.', transit: 'Metro / Subway systems, Uber, Lyft.', day1: 'Times Square & Central Park', day2: 'Statue of Liberty & Wall Street', day3: 'Broadway Show or Brooklyn Bridge' },
+            { id: 'CAN', name: 'Canada (Vancouver / Toronto)', continent: 'North America', visa: 'Canada Visitor Visa / eTA', fxRate: 0.023, fxCode: 'CAD', fxSymbol: 'CA$', flightEst: 58000, hotelEst: 8500, dailyEst: 5500, desc: 'Maple wilderness, Niagara Falls, and friendly cities.', capital: 'Ottawa', transit: 'Compass Card (Vancouver) / TTC (Toronto).', day1: 'Stanley Park & Capilano Suspension Bridge', day2: 'Gastown Historic District', day3: 'Whistler Mountain Day Trip' },
+
+            // SOUTH AMERICA
+            { id: 'BRA', name: 'Brazil (Rio de Janeiro)', continent: 'South America', visa: 'Visa Required / eVisa', fxRate: 0.095, fxCode: 'BRL', fxSymbol: 'R$', flightEst: 75000, hotelEst: 4500, dailyEst: 3500, desc: 'Christ the Redeemer, Copacabana beach, and Samba.', capital: 'Brasília', transit: 'Rio Metro and Taxi/Uber.', day1: 'Christ the Redeemer Statue on Corcovado', day2: 'Sugarloaf Mountain Cable Car', day3: 'Copacabana & Ipanema Beach Walk' },
+            { id: 'PER', name: 'Peru (Lima / Cusco)', continent: 'South America', visa: 'Visa Free (180 Days)', fxRate: 0.064, fxCode: 'PEN', fxSymbol: 'S/', flightEst: 78000, hotelEst: 3800, dailyEst: 3000, desc: 'Inca citadel Machu Picchu and world-class gastronomy.', capital: 'Lima', transit: 'Metropolitano Bus System and PeruRail.', day1: 'Historical Center of Lima & Miraflores', day2: 'Fly to Cusco & Sacred Valley', day3: 'Machu Picchu Citadel Excursion' },
+
+            // AFRICA
+            { id: 'EGY', name: 'Egypt (Cairo)', continent: 'Africa', visa: 'Visa Required / eVisa', fxRate: 0.83, fxCode: 'EGP', fxSymbol: 'E£', flightEst: 48000, hotelEst: 3000, dailyEst: 2200, desc: 'Great Pyramids of Giza, Sphinx, and Nile river.', capital: 'Cairo', transit: 'Cairo Metro and Uber.', day1: 'Giza Pyramids & Great Sphinx', day2: 'Grand Egyptian Museum Tour', day3: 'Khan el-Khalili Bazaar & Nile Cruise' },
+            { id: 'ZAF', name: 'South Africa (Cape Town)', continent: 'Africa', visa: 'Visa Required', fxRate: 0.31, fxCode: 'ZAR', fxSymbol: 'R', flightEst: 65000, hotelEst: 4200, dailyEst: 3000, desc: 'Table Mountain, coastal views, safaris, and vineyards.', capital: 'Pretoria / Cape Town', transit: 'MyCiTi Bus Network & Uber.', day1: 'Table Mountain Cableway Cable Car', day2: 'Cape Point & Penguin Beach', day3: 'V&A Waterfront Shopping & Dining' },
+
+            // OCEANIA
+            { id: 'AUS', name: 'Australia (Sydney / Melbourne)', continent: 'Oceania', visa: 'Subclass 600 Visitor Visa Required', fxRate: 0.026, fxCode: 'AUD', fxSymbol: 'A$', flightEst: 32000, hotelEst: 6500, dailyEst: 4500, desc: 'Sydney Opera House, kangaroo wildlife, and surf beaches.', capital: 'Canberra', transit: 'Opal Card (Sydney) / Myki Card (Melbourne).', day1: 'Sydney Opera House & Harbour Bridge', day2: 'Bondi Beach Coastal Walk', day3: 'Blue Mountains National Park' },
+
+            // ANTARCTICA
+            { id: 'ATA', name: 'Antarctica (Expedition Cruise)', continent: 'Antarctica', visa: 'Special Expedition Permit Required', fxRate: 0.017, fxCode: 'USD', fxSymbol: '$', flightEst: 180000, hotelEst: 25000, dailyEst: 12000, desc: 'The frozen continent: massive glaciers and penguin colonies.', capital: 'N/A', transit: 'Expedition Zodiac Boats & Polar Icebreakers.', day1: 'Crossing the Drake Passage', day2: 'Zodiac Landing at Penguin Colony', day3: 'Glacier Kayaking & Polar Plunge' }
+        ];
+
+        const CHECKLIST_DATA = {
+            tourist: [
+                { id: 't1', title: 'Valid Philippine Passport', desc: 'Must have at least 6 months validity remaining from date of departure.', required: true },
+                { id: 't2', title: 'Confirmed Roundtrip Flight Ticket', desc: 'Must show valid return ticket to PH within authorized stay duration.', required: true },
+                { id: 't3', title: 'Valid Foreign Visa / eVISA', desc: 'Required for destinations without visa-free status for PH passport.', required: true },
+                { id: 't4', title: 'eTravel System QR Code', desc: 'Registered online at etravel.gov.ph within 72 hrs prior to flight.', required: true },
+                { id: 't5', title: 'Confirmed Hotel Accommodations', desc: 'Agoda/Booking vouchers covering entire duration of stay.', required: true },
+                { id: 't6', title: 'Certificate of Employment (COE)', desc: 'Showing position, salary, date hired, and approved leave of absence.', required: false },
+                { id: 't7', title: 'Proof of Financial Capacity', desc: 'Bank certificate, active mobile banking apps, or credit card statements.', required: false }
+            ],
+            government: [
+                { id: 'g1', title: 'Valid Passport & Return Ticket', desc: '6 months validity and confirmed return flight.', required: true },
+                { id: 'g2', title: 'Approved Travel Authority (TA)', desc: 'Signed by Department Secretary or authorized Head of Agency.', required: true },
+                { id: 'g3', title: 'Letter of Approval / Leave Clearance', desc: 'Mandatory for Job Order (JO) or Contract of Service (COS) personnel.', required: true },
+                { id: 'g4', title: 'Government Office ID & Service Contract', desc: 'Proof of agency employment status.', required: true },
+                { id: 'g5', title: 'eTravel System QR Code', desc: 'Registered at etravel.gov.ph.', required: true }
+            ],
+            sponsored: [
+                { id: 's1', title: 'Valid Passport & Flight Ticket', desc: '6 months validity and confirmed return flight.', required: true },
+                { id: 's2', title: 'Notarized Affidavit of Support & Guarantee (AOSG)', desc: 'DFA authenticated / Apostilled if sponsor is based overseas.', required: true },
+                { id: 's3', title: 'Proof of Relationship (PSA Certificates)', desc: 'Birth/Marriage certificate proving relationship to sponsor.', required: true },
+                { id: 's4', title: 'Sponsor Identity & Financial Docs', desc: 'Sponsor passport copy, work permit, tax return, and bank statement.', required: true },
+                { id: 's5', title: 'eTravel System QR Code', desc: 'Completed online within 72 hours of departure.', required: true }
+            ],
+            ofw: [
+                { id: 'o1', title: 'Valid Passport & Work Visa', desc: 'Valid passport and stamped employment visa / work permit.', required: true },
+                { id: 'o2', title: 'MWO / DMW Overseas Employment Certificate (OEC)', desc: 'e-Receipt or valid OEC clearance voucher.', required: true },
+                { id: 'o3', title: 'Verified Employment Contract', desc: 'Stamped and verified by Migrant Workers Office (MWO).', required: true },
+                { id: 'o4', title: 'eTravel System Registration', desc: 'Registered as departing OFW.', required: true }
+            ],
+            student: [
+                { id: 'st1', title: 'Valid Passport & Student Visa', desc: 'Official student visa issued by destination country consulate.', required: true },
+                { id: 'st2', title: 'Acceptance Letter / Certificate', desc: 'Issued by foreign university or educational institution.', required: true },
+                { id: 'st3', title: 'Proof of Financial Means / Scholarship', desc: 'Sponsor bank statements or official scholarship grant letter.', required: true },
+                { id: 'st4', title: 'eTravel System Registration', desc: 'Completed at etravel.gov.ph.', required: true }
+            ]
+        };
+
+        // State Tracking
+        let currentDestination = null;
+        let checkedItems = new Set();
+
+        window.onload = function() {
+            populateDestinationDropdown('ALL');
+            renderChecklist();
+            
+            // Format current date display
+            const dateObj = new Date();
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('currentDateBadge').innerHTML = `<i class="fa-regular fa-calendar-check mr-1.5 text-amber-400"></i> BI Ready (${dateObj.toLocaleDateString('en-US', options)})`;
+        };
+
+        function populateDestinationDropdown(continentFilter) {
+            const selectEl = document.getElementById('destinationSelect');
+            selectEl.innerHTML = '<option value="" disabled selected>-- Choose a Destination --</option>';
+
+            const filtered = continentFilter === 'ALL' 
+                ? GLOBAL_DESTINATIONS 
+                : GLOBAL_DESTINATIONS.filter(item => item.continent === continentFilter);
+
+            filtered.forEach(dest => {
+                const opt = document.createElement('option');
+                opt.value = dest.id;
+                opt.textContent = `[${dest.continent}] ${dest.name}`;
+                selectEl.appendChild(opt);
+            });
+        }
+
+        function handleContinentChange(continentValue) {
+            populateDestinationDropdown(continentValue);
+            if (currentDestination && continentValue !== 'ALL' && currentDestination.continent !== continentValue) {
+                resetDestinationSelection();
+            }
+        }
+
+        function selectDestination(destId) {
+            const dest = GLOBAL_DESTINATIONS.find(d => d.id === destId);
+            if (!dest) return;
+
+            currentDestination = dest;
+
+            // UI State updates
+            document.getElementById('unselectedPlaceholder').classList.add('hidden');
+            document.getElementById('destinationBanner').classList.remove('hidden');
+            document.getElementById('appTabsContainer').classList.remove('hidden');
+
+            // Banner details update
+            document.getElementById('bannerTitle').textContent = dest.name;
+            document.getElementById('bannerRegion').textContent = dest.continent;
+            document.getElementById('bannerVisa').textContent = dest.visa;
+            document.getElementById('bannerDescription').textContent = dest.desc;
+            document.getElementById('bannerCapital').textContent = `Capital / Hub: ${dest.capital}`;
+            document.getElementById('bannerCurrency').textContent = `1 ${dest.fxCode} ≈ ${(58.5 / dest.fxRate).toFixed(2)} PHP`;
+
+            document.getElementById('selectedDestinationStatus').textContent = dest.name;
+            const visaTag = document.getElementById('visaTagHeader');
+            visaTag.classList.remove('hidden');
+            visaTag.textContent = dest.visa;
+
+            // Update Budget Calculator Inputs
+            document.getElementById('inputFlight').value = dest.flightEst;
+            document.getElementById('inputHotel').value = dest.hotelEst;
+            document.getElementById('inputDaily').value = dest.dailyEst;
+
+            calculateBudget();
+            renderItinerary();
+
+            // Switch to BI Checklist
+            switchTab('biChecklist');
+        }
+
+        function resetDestinationSelection() {
+            currentDestination = null;
+            document.getElementById('destinationSelect').value = '';
+            document.getElementById('destinationBanner').classList.add('hidden');
+            document.getElementById('appTabsContainer').classList.add('hidden');
+            document.getElementById('unselectedPlaceholder').classList.remove('hidden');
+            document.getElementById('selectedDestinationStatus').textContent = 'No Selection';
+            document.getElementById('visaTagHeader').classList.add('hidden');
+            
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(el => el.classList.add('hidden'));
+        }
+
+        function switchTab(tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(el => el.classList.add('hidden'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-teal-600', 'text-white');
+                btn.classList.add('glass-panel', 'text-slate-700');
+            });
+
+            const targetContent = document.getElementById(`tabContent-${tabId}`);
+            if (targetContent) targetContent.classList.remove('hidden');
+
+            const targetBtn = document.getElementById(`tabBtn-${tabId}`);
+            if (targetBtn) {
+                targetBtn.classList.remove('glass-panel', 'text-slate-700');
+                targetBtn.classList.add('bg-teal-600', 'text-white');
+            }
+        }
+
+        function renderChecklist() {
+            const category = document.getElementById('travelerCategory').value;
+            const items = CHECKLIST_DATA[category] || CHECKLIST_DATA['tourist'];
+            const container = document.getElementById('checklistContainer');
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const isChecked = checkedItems.has(item.id);
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border transition-all cursor-pointer ${isChecked ? 'bg-teal-50/90 border-teal-300' : 'bg-slate-50/90 border-slate-200 hover:border-slate-300'}`;
+                card.onclick = () => toggleCheckItem(item.id);
+
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} class="mt-1 h-4 w-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500 pointer-events-none">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-sm ${isChecked ? 'text-teal-900 line-through' : 'text-slate-800'}">${item.title}</h4>
+                                ${item.required ? '<span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">MANDATORY</span>' : '<span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded">SUPPORTING</span>'}
+                            </div>
+                            <p class="text-xs text-slate-600">${item.desc}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            updateChecklistProgress(items);
+        }
+
+        function toggleCheckItem(itemId) {
+            if (checkedItems.has(itemId)) {
+                checkedItems.delete(itemId);
+            } else {
+                checkedItems.add(itemId);
+            }
+            renderChecklist();
+        }
+
+        function updateChecklistProgress(items) {
+            const total = items.length;
+            let checkedCount = 0;
+            items.forEach(i => {
+                if (checkedItems.has(i.id)) checkedCount++;
+            });
+
+            const percentage = Math.round((checkedCount / total) * 100);
+            document.getElementById('checklistProgressText').textContent = `Progress: ${percentage}% Completed (${checkedCount}/${total} Items)`;
+        }
+
+        function calculateBudget() {
+            const days = parseInt(document.getElementById('inputDays').value) || 1;
+            const flight = parseFloat(document.getElementById('inputFlight').value) || 0;
+            const hotelPerNight = parseFloat(document.getElementById('inputHotel').value) || 0;
+            const dailyMoney = parseFloat(document.getElementById('inputDaily').value) || 0;
+            const travelTax = parseFloat(document.getElementById('inputTravelTax').value) || 0;
+
+            const totalHotel = hotelPerNight * Math.max(1, days - 1);
+            const totalDaily = dailyMoney * days;
+            const totalCost = flight + totalHotel + totalDaily + travelTax;
+
+            document.getElementById('valFlightDisplay').textContent = `₱${flight.toLocaleString()}`;
+            document.getElementById('valHotelDisplay').textContent = `₱${hotelPerNight.toLocaleString()}`;
+            document.getElementById('valDailyDisplay').textContent = `₱${dailyMoney.toLocaleString()}`;
+
+            document.getElementById('summaryFlight').textContent = `₱${flight.toLocaleString()}`;
+            document.getElementById('summaryHotel').textContent = `₱${totalHotel.toLocaleString()}`;
+            document.getElementById('summaryDaily').textContent = `₱${totalDaily.toLocaleString()}`;
+            document.getElementById('summaryTax').textContent = `₱${travelTax.toLocaleString()}`;
+
+            document.getElementById('totalCostPHP').textContent = `₱${totalCost.toLocaleString()}`;
+            document.getElementById('daysCountDisplay').textContent = days;
+
+            const minBank = totalCost * 1.2;
+            const maxBank = totalCost * 1.6;
+            document.getElementById('recommendedBankPHP').textContent = `₱${Math.round(minBank).toLocaleString()} - ₱${Math.round(maxBank).toLocaleString()}`;
+
+            if (currentDestination) {
+                const foreignTotal = totalCost * (currentDestination.fxRate / 58.5);
+                document.getElementById('foreignCurrencyConverted').textContent = `${currentDestination.fxSymbol} ${foreignTotal.toFixed(2)} ${currentDestination.fxCode}`;
+            } else {
+                document.getElementById('foreignCurrencyConverted').textContent = `--`;
+            }
+        }
+
+        function buildKlookLink(query) {
+            const encoded = encodeURIComponent(query);
+            return `https://www.klook.com/en-PH/search/?query=${encoded}&aid=${KLOOK_AFFILIATE_PARAM}`;
+        }
+
+        function renderItinerary() {
+            const container = document.getElementById('itineraryDaysContainer');
+            const transitText = document.getElementById('transitInfoText');
+            const subheader = document.getElementById('itinerarySubheader');
+            const klookGrid = document.getElementById('klookAffiliateGrid');
+
+            if (!currentDestination) {
+                container.innerHTML = '<p class="text-xs text-slate-500">Please choose a destination first.</p>';
+                return;
+            }
+
+            subheader.textContent = `3-Day Highlight Tour for ${currentDestination.name}`;
+            transitText.textContent = `${currentDestination.name} Transit Note: ${currentDestination.transit}`;
+
+            container.innerHTML = `
+                <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                    <span class="bg-teal-700 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Day 1</span>
+                    <h4 class="font-bold text-sm text-slate-800">Arrival & Iconic Landmarks</h4>
+                    <p class="text-xs text-slate-600">${currentDestination.day1}</p>
+                </div>
+
+                <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                    <span class="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Day 2</span>
+                    <h4 class="font-bold text-sm text-slate-800">Culture & Major Excursions</h4>
+                    <p class="text-xs text-slate-600">${currentDestination.day2}</p>
+                </div>
+
+                <div class="bg-slate-50/90 border border-slate-200 rounded-xl p-4 space-y-2 shadow-sm">
+                    <span class="bg-cyan-700 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase">Day 3</span>
+                    <h4 class="font-bold text-sm text-slate-800">Shopping, Food & Departure</h4>
+                    <p class="text-xs text-slate-600">${currentDestination.day3}</p>
+                </div>
+            `;
+
+            // DYNAMIC MONETIZED KLOOK DEALS GENERATOR
+            if (klookGrid) {
+                const destName = currentDestination.name;
+                klookGrid.innerHTML = `
+                    <a href="${buildKlookLink(destName + ' attractions')}" target="_blank" rel="noopener noreferrer" class="bg-white hover:bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm text-center transition-all group block">
+                        <i class="fa-solid fa-ticket text-amber-500 text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <h5 class="font-bold text-xs text-slate-800">${destName} Passes</h5>
+                        <p class="text-[10px] text-slate-500">Theme Parks & Entry Tickets</p>
+                        <span class="inline-block mt-2 text-[10px] bg-amber-500 text-white font-bold px-2 py-0.5 rounded">Book on Klook</span>
+                    </a>
+
+                    <a href="${buildKlookLink(destName + ' eSIM airport internet')}" target="_blank" rel="noopener noreferrer" class="bg-white hover:bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm text-center transition-all group block">
+                        <i class="fa-solid fa-wifi text-teal-600 text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <h5 class="font-bold text-xs text-slate-800">4G/5G eSIM & WiFi</h5>
+                        <p class="text-[10px] text-slate-500">Instant airport pickup / QR</p>
+                        <span class="inline-block mt-2 text-[10px] bg-teal-600 text-white font-bold px-2 py-0.5 rounded">Get Connectivity</span>
+                    </a>
+
+                    <a href="${buildKlookLink(destName + ' transit pass train')}" target="_blank" rel="noopener noreferrer" class="bg-white hover:bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm text-center transition-all group block">
+                        <i class="fa-solid fa-train text-cyan-600 text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <h5 class="font-bold text-xs text-slate-800">Train & Transit Passes</h5>
+                        <p class="text-[10px] text-slate-500">Subway & Airport Express</p>
+                        <span class="inline-block mt-2 text-[10px] bg-cyan-600 text-white font-bold px-2 py-0.5 rounded">Reserve Cards</span>
+                    </a>
+
+                    <a href="${buildKlookLink(destName + ' day tour')}" target="_blank" rel="noopener noreferrer" class="bg-white hover:bg-amber-50 border border-amber-200 p-3 rounded-xl shadow-sm text-center transition-all group block">
+                        <i class="fa-solid fa-camera-retro text-rose-500 text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <h5 class="font-bold text-xs text-slate-800">Guided Day Tours</h5>
+                        <p class="text-[10px] text-slate-500">Day Trips & Sightseeing</p>
+                        <span class="inline-block mt-2 text-[10px] bg-rose-500 text-white font-bold px-2 py-0.5 rounded">Explore Tours</span>
+                    </a>
+                `;
+            }
+        }
+
+        function toggleGcashModal(show) {
+            const modal = document.getElementById('gcashModal');
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function copyGcashNumber() {
+            const num = "09777161505";
+            navigator.clipboard.writeText(num);
+            alert("GCash Number copied to clipboard! Thank you for supporting BjaheroPH.");
+        }
+
+        function resetAllData() {
+            checkedItems.clear();
+            resetDestinationSelection();
+            document.getElementById('continentSelect').value = 'ALL';
+            populateDestinationDropdown('ALL');
+            renderChecklist();
+        }
+    </script>
+</body>
+</html>
